@@ -17,6 +17,7 @@ import { HuggingFace } from '../models/huggingface.js';
 import { Qwen } from "../models/qwen.js";
 import { Grok } from "../models/grok.js";
 import { DeepSeek } from '../models/deepseek.js';
+import { LangChain } from '../models/langchain.js';
 
 export class Prompter {
     constructor(agent, fp) {
@@ -37,6 +38,7 @@ export class Prompter {
         this.cooldown = this.profile.cooldown ? this.profile.cooldown : 0;
         this.last_prompt_time = 0;
         this.awaiting_coding = false;
+        const use_langchain = this.profile.use_langchain;
 
         // try to get "max_tokens" parameter, else null
         let max_tokens = null;
@@ -44,7 +46,9 @@ export class Prompter {
             max_tokens = this.profile.max_tokens;
         if (typeof chat === 'string' || chat instanceof String) {
             chat = {model: chat};
-            if (chat.model.includes('gemini'))
+            if (use_langchain)
+                chat.api = 'langchain';
+            else if (chat.model.includes('gemini'))
                 chat.api = 'google';
             else if (chat.model.includes('gpt') || chat.model.includes('o1'))
                 chat.api = 'openai';
@@ -72,7 +76,9 @@ export class Prompter {
 
         console.log('Using chat settings:', chat);
 
-        if (chat.api === 'google')
+        if (chat.api === 'langchain')
+            this.chat_model = new LangChain(chat.model, chat.url);
+        else if (chat.api === 'google')
             this.chat_model = new Gemini(chat.model, chat.url);
         else if (chat.api === 'openai')
             this.chat_model = new GPT(chat.model, chat.url);
@@ -125,6 +131,8 @@ export class Prompter {
                 this.embedding_model = new Qwen(embedding.model, embedding.url);
             else if (embedding.api === 'mistral')
                 this.embedding_model = new Mistral(embedding.model, embedding.url);
+            else if (embedding.api === 'langchain')
+                this.embedding_model = new LangChain(embedding.model, embedding.url);
             else {
                 this.embedding_model = null;
                 console.log('Unknown embedding: ', embedding ? embedding.api : '[NOT SPECIFIED]', '. Using word overlap.');
