@@ -66,7 +66,7 @@ export class LangChain {
         const embeddings = new OpenAIEmbeddings({
             apiKey: getKey('OPENAI_API_KEY'),
             encoding_format: 'float',
-            model: "text-embedding-3-small"
+            model: "text-embedding-ada-002"
         });
         const ret = await embeddings.embedQuery(text);
         return ret
